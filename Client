@@ -1,0 +1,64 @@
+"""
+   1.Take input for nickname. 
+   2.We have to create two fucntion , 1st for receiving data from client throgh server
+   3.And for sending data to client through server
+
+   1.1:Get messages from server and add your nick to server
+        else : print(messages)
+   1.2:Close and break
+   2.1:def sending function
+   2.2:message=(f"{alias}#to whome# : {input(" Your message ")})
+   2.3:Create thread for rec and sending 
+
+"""
+#####################################################################
+import socket 
+import threading 
+
+host = "127.0.0.1"
+port = 57893
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+try:
+   client.connect((host, port))
+except:
+   print("Server unreachable")
+   exit()
+
+nickname = input("Your nickname:  ")
+client.send(nickname.encode("utf-8"))
+
+def recv():
+    while True:
+      try:
+         data = client.recv(1024).decode("utf-8")
+         if not data:
+            print("Server was closed +_+ ")
+            client.close()
+         print(data.decode("utf-8"))
+      except:
+         print("Smth went wrong")
+         client.close()
+         break
+
+def send():
+   while True:
+      msg = input(">>  ")
+      client.send(msg.encode("utf-8"))
+      try:
+         client.settimeout(2.0)
+         ack = client.recv(1024).decode("utf-8")
+         if ack  == "ACK":
+            print("Sended Successfully")
+      except:
+         print("Server didn't respond +_+ ")
+
+recv_thread = threading.Thread(target = recv)
+recv_thread.start()
+
+send_thread = threading.Thread(target = send)
+send_thread.start()
+
+recv_thread.join()
+send_thread.join()
+##############################################################
