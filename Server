@@ -1,0 +1,59 @@
+import threading
+import socket 
+
+host = "127.0.0.1"
+port = 57893
+##используем IPv4
+##используем TCP (надёжная передача).
+
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
+server.bind((host, port)) ##сервер "привязывается" к адресу 127.0.0.1:57896
+server.listen() ##сервер начинает ждать подключений
+
+clients = [] #Adding connected clients
+nicknames = [] #Their aliases
+
+def broadcast(msg, sender = None): #Sending
+    for i in clients:
+        try:
+            if sender and clients == sender:
+                continue # Don't send back to sender
+            i.send(msg.encode("utf-8")) #Sending messages
+        except:
+            clients.remove(i) #Deleting the disconnected client
+
+def handle_clients(client):
+    while True:
+        try:
+            data = client.recv(1024).decode("utf-8")#receiving messages
+            if not data:
+                break #if message is empty
+            else: 
+                client.send("ACK".encode("utf-8"))
+            nick = nicknames[clients.index(client)]
+            broadcast(f"{nick}: {data}")#Sending_Function
+        except:
+            index = clients.index(client)
+            clients.remove(client)
+            client.close()
+            nickname = nicknames[index]
+            broadcast(f"{nickname} leave the chat!". encode("utf-8"))
+            nicknames.remove(nickname)
+            break
+
+def receive():
+    while True:
+        client , address = server.accept()#Door for client  
+        print(f"{address}'ve been connected")
+        client.send("Add your nickname: ".encode("utf-8"))
+        nickname = client.recv(1024).decode("utf-8")
+        nicknames.append(nickname)
+        clients.append(client)
+        broadcast(f"{nickname} was successfully connected!". encode("utf-8"))
+        thread = threading.Thread(target=handle_clients, args=(client,))
+        thread.start()
+
+if __name__ == "__main__":
+    print("Server is running +_+ ")
+    receive()
+
